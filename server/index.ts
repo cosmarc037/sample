@@ -42,7 +42,7 @@ app.use((req, res, next) => {
   await registerRoutes(app);
 
   // Create the HTTP server before passing it to setupVite
-  const port = 8000;
+  const port = parseInt(process.env.PORT || "8000", 10);
   const server = http.createServer(app);
 
   // Setup Vite or static serving
@@ -61,7 +61,7 @@ app.use((req, res, next) => {
   });
 
   // Start the HTTP server
-  server.listen(port, "localhost", () => {
+  server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
   });
 })();

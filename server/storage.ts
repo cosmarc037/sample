@@ -23,33 +23,23 @@ export class MemStorage implements IStorage {
     this.messages = new Map();
     this.currentId = 1;
     this.configManager = ConfigManager.getInstance();
-    // Initialize Azure client from Key Vault (async)
-    this.initializeAzureClientFromKeyVault();
+    // Initialize Azure client using ConfigManager
+    this.initializeAzureClient();
   }
 
-  private async initializeAzureClientFromKeyVault() {
+  private async initializeAzureClient() {
     try {
-      const keyVaultUrl = process.env.AZURE_KEY_VAULT_URL || "https://pe-llm-credentials.vault.azure.net";
-      const credential = new DefaultAzureCredential();
-      const client = new SecretClient(keyVaultUrl, credential);
-
-      // Replace these with your actual secret names in Key Vault
-      const apiKeySecret = await client.getSecret("AZURE-API-KEY");
-      const endpointSecret = await client.getSecret("AZURE-ENDPOINT");
-      const deploymentNameSecret = await client.getSecret("AZURE-DEPLOYMENT-NAME");
-      const apiVersionSecret = await client.getSecret("AZURE-API-VERSION");
-
-      const config: AzureOpenAIConfig = {
-        apiKey: apiKeySecret.value || "",
-        endpoint: endpointSecret.value || "",
-        deploymentName: deploymentNameSecret.value || "",
-        apiVersion: apiVersionSecret.value || ""
-      };
-
-      this.azureClient = new AzureOpenAIClient(config);
-      console.log("Azure OpenAI client initialized with credentials from Key Vault");
+      // Load configuration from ConfigManager (which will try Key Vault, env vars, then file)
+      const config = await this.configManager.loadConfig();
+      
+      if (this.configManager.isConfigured()) {
+        this.azureClient = new AzureOpenAIClient(config);
+        console.log("Azure OpenAI client initialized with credentials from ConfigManager");
+      } else {
+        console.warn("Azure OpenAI client not configured. Using fallback responses.");
+      }
     } catch (error) {
-      console.error("Failed to initialize Azure OpenAI client from Key Vault:", error);
+      console.error("Failed to initialize Azure OpenAI client:", error);
     }
   }
 
